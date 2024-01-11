@@ -267,7 +267,7 @@ long microsecondsToCentimeters(long microseconds) {
 bool comparePasscode() {
     for (int i = 0; i < passcodeLength; i++) {
         if (enteredPasscode[i] != correctPasscode[i]) {
-            return false;  // Incorrect passcode
+            return false;  // Incorrect passcod
         }
     }
     return true;  // Correct passcode
