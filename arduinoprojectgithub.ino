@@ -216,7 +216,7 @@ void loop() {
                         enteredPasscode[i] = -1;  // 0 or any other placeholder value
                     }
                 } else {
-                    // Incorrect passcode, reset the entered passcode
+                    // Incorrect passcode, reset the entered passcod
                     lcd.setCursor(0,1);
                     lcd.print("Wrong passcode");
                     delay(3000);
