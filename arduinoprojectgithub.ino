@@ -1,4 +1,8 @@
 
+
+
+
+
 #include "Adafruit_Keypad.h"
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -113,30 +117,135 @@ void setup() {
 
 }
 
-
-
 void loop() {
-  // put your main code here, to run repeatedly
+
+    mqttClient.poll();
 
     unsigned long currentMillis = millis();
 
     previousMillis = currentMillis;
 
-    if (IsTriggerd == true)
-    {
-        // send message, the Print interface can be used to set the message contents
-        mqttClient.beginMessage(topic);
-        mqttClient.print("Alarm activated! ");
-        mqttClient.endMessage();
-    }else
-    {
-        mqttClient.beginMessage(topic);
-        mqttClient.print("Alarm deactivated ");
-        mqttClient.endMessage();
+
+
+    while (IsalarmActive == "on"){
+
+
+
+
+
+
+        if (IsTriggerd == true)
+        {
+            // send message, the Print interface can be used to set the message contents
+            mqttClient.beginMessage(topic);
+            mqttClient.print("Alarm activated! ");
+            mqttClient.endMessage();
+        }else
+        {
+            mqttClient.beginMessage(topic);
+            mqttClient.print("Alarm deactivated ");
+            mqttClient.endMessage();
+        }
+
+
+
+
+        long duration, inches, cm;
+
+
+        digitalWrite(TrigPin, LOW);
+        delayMicroseconds(2);
+        digitalWrite(TrigPin, HIGH);
+        delayMicroseconds(10);
+        digitalWrite(TrigPin, LOW);
+
+
+
+        duration = pulseIn(EchoPin, HIGH);
+
+        // convert the time into a distance
+        inches = microsecondsToInches(duration);
+        cm = microsecondsToCentimeters(duration);
+
+        // Serial.print(inches);
+        // Serial.print("in, ");
+        // Serial.print(cm);
+        // Serial.print("cm");
+        // Serial.println();
+
+        delay(100);
+
+        // put your main code here, to run repeatedly:
+        customKeypad.tick();
+
+        keypadEvent e = customKeypad.read();
+        char Input = (char)e.bit.KEY;
+        Serial.println((int)Input);
+
+
+        delay(10);
+
+
+
+        if (e.bit.EVENT == KEY_JUST_PRESSED) {
+            Serial.println("Key pressed");
+            Serial.println(Input);  // Print the ASCII value of the key
+            enteredPasscode[passcodeIndex] = Input;
+            passcodeIndex++;
+
+            for (int i = 0; i < passcodeLength; i++)
+            {
+                lcd.setCursor(i + 10,0);
+                lcd.print(enteredPasscode[i]);
+            }
+
+
+            if (passcodeIndex == passcodeLength) {
+                if (comparePasscode()) {
+                    lcd.setCursor(0,1);
+                    lcd.print("Correct passcode");
+                    delay(3000);
+                    lcd.clear();
+                    lcd.setCursor(0,0);
+                    lcd.print("Passcode:");
+                    IsTriggerd = false;
+                    passcodeIndex = 0;
+
+                    //Clear the correct passcode after it is entered
+                    for (int i = 0; i < passcodeLength; i++) {
+                        enteredPasscode[i] = -1;  // 0 or any other placeholder value
+                    }
+                } else {
+                    // Incorrect passcode, reset the entered passcode
+                    lcd.setCursor(0,1);
+                    lcd.print("Wrong passcode");
+                    delay(3000);
+                    IsTriggerd = true;
+                    passcodeIndex = 0;  // Reset the entered passcode
+                    for (int i = 0; i < passcodeLength; i++) {
+                        enteredPasscode[i] = -1;  // 0 or any other placeholder value
+                    }
+                    lcd.clear();
+                    lcd.setCursor(0,0);
+                    lcd.print("Passcode:");
+                }
+            }
+        }
+
+// Turn on the buzzer when something is within 15 cm and the correct passcode has not been entered
+        if (cm <= 15) {
+            IsTriggerd = true;
+        }
+
+        if (IsTriggerd == true){
+            digitalWrite(Buzzerpin, HIGH);
+        } else {
+            digitalWrite(Buzzerpin, LOW);
+        }
+
+
+
     }
-
-
-
 }
 
 long microsecondsToInches(long microseconds) {
@@ -155,6 +264,16 @@ long microsecondsToCentimeters(long microseconds) {
     return microseconds / 29 / 2;
 }
 
+bool comparePasscode() {
+    for (int i = 0; i < passcodeLength; i++) {
+        if (enteredPasscode[i] != correctPasscode[i]) {
+            return false;  // Incorrect passcode
+        }
+    }
+    return true;  // Correct passcode
+
+}
+
 void onMqttMessage(int messageSize) {
     // we received a message, print out the topic and contents
     Serial.println("Received a message with topic '");
@@ -168,3 +287,9 @@ void onMqttMessage(int messageSize) {
     while (mqttClient.available()) {
         IsalarmActive += (char)mqttClient.read();
     }
+
+    Serial.println();
+
+    Serial.println();
+}
+
