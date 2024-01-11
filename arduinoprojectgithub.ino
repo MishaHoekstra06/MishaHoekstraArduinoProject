@@ -1,9 +1,4 @@
 
-
-
-
-
-
 #include "Adafruit_Keypad.h"
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -114,9 +109,12 @@ void setup() {
 
     lcd.backlight();
     lcd.setCursor(0,0);
+    lcd.print("Passcode:");
+
+}
 
 
-    void setup() {
+void setup() {
   // put your setup code here, to run once:
   serial.b
 }
